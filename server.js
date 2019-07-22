@@ -29,8 +29,24 @@ server.post('/auth/register', mw.validateUser, async (req, res) => {
       res.status(201).json({ message: `Hooray! Welcome Aboard, ${username}!!`, id, username })
    }
    catch (error) {
-      res.status(500).json('Oops! We missed that. Hang on, let\'s fix it together')
+      res.status(500).json('Oops! We missed that. Hang on, let\'s fix it together');
    }
+})
+
+server.post('/auth/login', mw.validateUser, async (req, res) => {
+   let { username, password } = req.body
+   Users.getBy({ username })
+      .first()
+      .then(user => {
+         if (user && bcrypt.compareSync(password, user.password)) {
+            res.status(200).json({ message: `Welcome ${user.username}!` });
+         } else {
+            res.status(401).json({ message: 'Oops! Invalid Credentials' });
+         }
+      })
+      .catch(error => {
+         res.status(401).json({ message: 'Oops! Invalid Credentials' });
+      });
 })
 
 module.exports = server;
