@@ -29,5 +29,22 @@ module.exports = {
          .catch(() => {
             res.status(401).json({ message: 'Oops! Invalid Credentials' });
          });
+   },
+
+   restrict: function (req, res, next) {
+      let { username, password } = req.headers
+      Users.getBy({ username })
+         .first()
+         .then(user => {
+            if (user && bcrypt.compareSync(password, user.password)) {
+               req.user = user;
+               next();
+            } else {
+               res.status(401).json({ message: 'Oops! Invalid Credentials' });
+            }
+         })
+         .catch(() => {
+            res.status(401).json({ message: 'Oops! Invalid Credentials' });
+         });
    }
 }

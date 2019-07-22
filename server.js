@@ -6,19 +6,12 @@ const bcrypt = require('bcryptjs');
 const server = express();
 const Users = require('./data/helpers/dbModel');
 const mw = require('./data/helpers/middleware');
+const authRouter = require('./auth/authRouter');
 
 server.use(express.json());
 server.use(helmet());
 server.use(cors());
-
-server.get('/api/users', async (req, res) => {
-   try {
-      const user = await Users.get();
-      res.status(200).json(user);
-   } catch (error) {
-      res.status(500).json('Oops! We missed that. Hang on, let\'s fix it together');
-   };
-});
+server.use('/api/restricted', mw.restrict, authRouter);
 
 server.post('/auth/register', mw.validateUser, async (req, res) => {
    const { password } = req.body;
