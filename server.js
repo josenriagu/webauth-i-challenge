@@ -1,38 +1,38 @@
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
-const bcrypt = require('bcryptjs');
+const session = require('express-session');
+const knexSessionStore = require('connect-session-knex')(session);
 
 const server = express();
-const Users = require('./data/helpers/dbModel');
+
 const mw = require('./data/helpers/middleware');
 const authRouter = require('./auth/authRouter');
+const mainRouter = require('./main/mainRouter');
 
 server.use(express.json());
 server.use(helmet());
+server.use(session({
+   name: 'sessionId', // name of the cookie
+   secret: 'someVeryAndReallyLongPieceOfString', // we intend to encrypt
+   cookie: {
+      maxAge: 1000 * 60 * 60,
+      secure: false,
+      httpOnly: true,
+   },
+   resave: false,
+   saveUninitialized: true,
+   store: new knexSessionStore({
+      knex: require('./config/dbConfig.js'), // configured instance of knex
+      tablename: 'sessions', // table that will store sessions inside the db, name it anything you want
+      sidfieldname: 'sid', // column that will hold the session id, name it anything you want
+      createtable: true, // if the table does not exist, it will create it automatically
+      clearInterval: 1000 * 60 * 60, // time it takes to check for old sessions and remove them from the database to keep it clean and performant
+   })
+}));
 server.use(cors());
-server.use('/api/restricted', mw.restrict, authRouter);
 
-server.post('/auth/register', mw.validateUser, async (req, res) => {
-   const { password } = req.body;
-   const hashed = bcrypt.hashSync(password, 16);
-   req.body.password = hashed;
-   try {
-      const { id, username } = await Users.insertUser(req.body);
-      res.status(201).json({ message: `Hooray! Welcome Aboard, ${username}!!`, id, username })
-   }
-   catch (error) {
-      res.status(500).json('Oops! We missed that. Hang on, let\'s fix it together');
-   };
-})
-
-server.post('/auth/login', mw.validateUser, mw.validateLogin, (req, res) => {
-   const user = req.user;
-   try {
-      res.status(200).json({ message: `Welcome ${user.username}!` });
-   } catch (error) {
-      res.status(500).json('Oops! We missed that. Hang on, let\'s fix it together');
-   };
-})
+server.use('/api/restricted', mw.restrict, mainRouter);
+server.use('/auth', mw.validateUser, authRouter);
 
 module.exports = server;
