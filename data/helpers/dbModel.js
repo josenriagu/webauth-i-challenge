@@ -2,7 +2,8 @@ const db = require('../../config/dbConfig');
 
 module.exports = {
    get: function () {
-      return db('users');
+      return db('users')
+         .select('id', 'username'); // returns only the id and username fields. not cool to show the password hashes
    },
 
    getUserById: function (id) {
@@ -12,7 +13,8 @@ module.exports = {
    },
 
    getBy: function (filter) {
-      return db('users').where(filter);
+      return db('users')
+         .where(filter);
    },
 
    insertUser: function (user) {
