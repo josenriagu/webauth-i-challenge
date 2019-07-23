@@ -20,6 +20,7 @@ module.exports = {
          .first()
          .then(user => {
             if (user && bcrypt.compareSync(password, user.password)) {
+               req.session.user = user; // sets the session for the user
                req.user = user;
                next();
             } else {
@@ -32,19 +33,10 @@ module.exports = {
    },
 
    restrict: function (req, res, next) {
-      let { username, password } = req.headers
-      Users.getBy({ username })
-         .first()
-         .then(user => {
-            if (user && bcrypt.compareSync(password, user.password)) {
-               req.user = user;
-               next();
-            } else {
-               res.status(401).json({ message: 'Oops! Invalid Credentials' });
-            }
-         })
-         .catch(() => {
-            res.status(401).json({ message: 'Oops! Invalid Credentials' });
-         });
+      if (req.session && req.session.user) {
+         next();
+      } else {
+         res.status(400).json({ message: 'Oops! No Credentials' });
+      }
    }
 }
